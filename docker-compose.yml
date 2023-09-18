@@ -1,0 +1,49 @@
+---
+version: "3.9"
+services:
+  master:
+    image: mariadb
+    restart: always
+    container_name: master
+    networks:
+      - cluster
+    environment:
+      - MYSQL_ROOT_PASSWORD=12345
+    command: |
+      --bind_address=0.0.0.0 
+      --port=3306 
+      --lc_messages=pt_BR 
+      --log_error=/var/log/mysql/error.log 
+      --innodb_file_per_table=1 
+      --log_bin=mysql-bin 
+      --sync_binlog=1 
+      --server_id=1 
+  mirror:
+    image: mariadb
+    restart: always
+    container_name: mirror
+    networks:
+      - cluster
+    environment:
+      - MYSQL_ROOT_PASSWORD=12345
+    command: |
+      --bind_address=0.0.0.0 
+      --port=3306 
+      --lc_messages=pt_BR 
+      --log_error=/var/log/mysql/error.log 
+      --innodb_file_per_table=1 
+      --disable_log_bin=1 
+      --server_id=2
+  proxy:
+    image: proxysql/proxysql
+    container_name: proxy
+    ports:
+      - 6032:6032
+      - 6033:6033
+    networks:
+      - cluster
+    depends_on:
+      - master
+      - mirror
+networks:
+  cluster:
